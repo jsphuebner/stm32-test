@@ -1,0 +1,11 @@
+proc program_device () {
+    reset halt
+    flash write_image erase unlock stm32_test.hex
+    reset run
+    sleep 1
+    shutdown
+}
+
+init
+reset init
+program_device ()
