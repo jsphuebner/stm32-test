@@ -18,4 +18,8 @@ Now you can compile stm32-sine by typing
 
 `make`
 
+or
+
+`make HWCONFIG=HWCONFIG_REV3`
+
 And upload it to your board using a JTAG/SWD adapter

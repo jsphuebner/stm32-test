@@ -29,9 +29,12 @@
 #include <libopencm3/stm32/crc.h>
 #include <libopencm3/stm32/iwdg.h>
 #include <libopencm3/cm3/scb.h>
+#include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/timer.h>
 #include "hwdefs.h"
 #include "printf.h"
+
+void test_run();
 
 #define OCURMAX 4096
 #define NUM_FLOAT_PINS (sizeof(floatingPins) / sizeof(PINDEF))
@@ -63,6 +66,9 @@ static const PINDEF floatingPins[] =
 
 static const CONTINUITYDEF continuityPins[] =
 {
+   #ifdef HWCONFIG_REV1
+   { { "PB0", GPIOB, GPIO0 }, { "PD2", GPIOD, GPIO2 }, false, 0 },
+   #endif
    { { "PC8", GPIOC, GPIO8 }, { "PC5", GPIOC, GPIO5 }, true, 600 },
    { { "PB5", GPIOB, GPIO5 }, { "PC13", GPIOC, GPIO13 }, true, 600 },
    { { "PB6", GPIOB, GPIO6 }, { "PC10", GPIOC, GPIO10 }, true, 600 },
@@ -97,8 +103,14 @@ static void clock_setup(void)
 
 static void usart_setup(void)
 {
+    /* Enable the USART1 interrupt. */
+    nvic_enable_irq(NVIC_USART3_IRQ);
+
     gpio_set_mode(TERM_USART_TXPORT, GPIO_MODE_OUTPUT_50_MHZ,
                   GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, TERM_USART_TXPIN);
+
+    gpio_set_mode(TERM_USART_RXPORT, GPIO_MODE_INPUT,
+                  GPIO_CNF_INPUT_FLOAT, TERM_USART_RXPIN);
 
     /* Setup UART parameters. */
     usart_set_baudrate(TERM_USART, USART_BAUDRATE);
@@ -108,8 +120,27 @@ static void usart_setup(void)
     usart_set_parity(TERM_USART, USART_PARITY_NONE);
     usart_set_flow_control(TERM_USART, USART_FLOWCONTROL_NONE);
 
+    /* Enable Receive interrupt. */
+    USART_CR1(TERM_USART) |= USART_CR1_RXNEIE;
+
     /* Finally enable the USART. */
     usart_enable(TERM_USART);
+}
+
+void usart3_isr(void)
+{
+    /* Check if we were called because of RXNE. */
+    if (((USART_CR1(USART3) & USART_CR1_RXNEIE) != 0) &&
+      ((USART_SR(USART3) & USART_SR_RXNE) != 0)) {
+
+    /* Retrieve the data from the peripheral. */
+    usart_recv(USART3);
+
+    /* Enable transmit interrupt so it sends back the data. */
+    USART_CR1(USART3) |= USART_CR1_TXEIE;
+
+    test_run();
+  }
 }
 
 /**
@@ -280,14 +311,14 @@ static bool test_inhibit()
    return gateOk;
 }
 
-static void blink()
+static void blink(uint32_t delay)
 {
    gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO12);
 
    while(1)
    {
       gpio_toggle(GPIOC, GPIO12);
-      wait_us(100000);
+      wait_us(delay);
    }
 }
 
@@ -315,46 +346,55 @@ static void eval_result(bool result, bool* pass)
    }
 }
 
+void test_run()
+{
+    bool pass = true;
+
+    printf("Serial Number: %X%X%X\r\n", DESIG_UNIQUE_ID2, DESIG_UNIQUE_ID1, DESIG_UNIQUE_ID0);
+
+    for (uint32_t i = 0; i < NUM_FLOAT_PINS; i++)
+    {
+        printf("Float test pin %s ... ", floatingPins[i].name);
+        eval_result(test_floating(floatingPins[i]), &pass);
+    }
+
+    for (uint32_t i = 0; i < NUM_CONT_PINS; i++)
+    {
+        printf("Continuity test input: %s, output: %s ... ", continuityPins[i].in.name, continuityPins[i].out.name);
+        eval_result(test_continuity(continuityPins[i]), &pass);
+    }
+
+    //wait_us(100000);
+    printf("Testing Window Comparator ... ");
+    eval_result(test_comparator(), &pass);
+
+    printf("Testing Inhibit Circuitry ... ");
+    eval_result(test_inhibit(), &pass);
+
+    generate_resolver_excitation();
+
+    if (pass)
+    {
+        printf("\033[32;1;1mAll tests PASSED\033[0;0;0m\r\n");
+        //blink(100000);
+    }
+    else
+    {
+        printf("\033[31;1;1mAt least one test FAILED\033[0;0;0m\r\n");
+    }
+}
+
 int main(void)
 {
-   bool pass = true;
    clock_setup();
    usart_setup();
    tim_setup();
 
-   AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP | AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON;
-   printf("Serial Number: %X%X%X\r\n", DESIG_UNIQUE_ID2, DESIG_UNIQUE_ID1, DESIG_UNIQUE_ID0);
+   AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP; // | AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON;
 
-   for (uint32_t i = 0; i < NUM_FLOAT_PINS; i++)
-   {
-      printf("Float test pin %s ... ", floatingPins[i].name);
-      eval_result(test_floating(floatingPins[i]), &pass);
-   }
-
-   for (uint32_t i = 0; i < NUM_CONT_PINS; i++)
-   {
-      printf("Continuity test input: %s, output: %s ... ", continuityPins[i].in.name, continuityPins[i].out.name);
-      eval_result(test_continuity(continuityPins[i]), &pass);
-   }
-
-   //wait_us(100000);
-   printf("Testing Window Comparator ... ");
-   eval_result(test_comparator(), &pass);
-
-   printf("Testing Inhibit Circuitry ... ");
-   eval_result(test_inhibit(), &pass);
-
-   generate_resolver_excitation();
-
-   if (pass)
-   {
-      printf("\033[32;1;1mAll tests PASSED\033[0;0;0m\r\n");
-      blink();
-   }
-   else
-   {
-      printf("\033[31;1;1mAt least one test FAILED\033[0;0;0m\r\n");
-   }
+   test_run();
+   
+   blink(500000);
 
    return 0;
 }

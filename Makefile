@@ -20,6 +20,7 @@
 BINARY		= stm32_test
 
 PREFIX		?= arm-none-eabi
+HWCONFIG	?= HWCONFIG_REV3
 #PREFIX		?= arm-elf
 SIZE  = $(PREFIX)-size
 CC		= $(PREFIX)-gcc
@@ -28,7 +29,7 @@ LD		= $(PREFIX)-gcc
 OBJCOPY		= $(PREFIX)-objcopy
 OBJDUMP		= $(PREFIX)-objdump
 TOOLCHAIN_DIR = `dirname \`which $(CC)\``/../$(PREFIX)
-CFLAGS		= -O0 -g3 -Wall -Wextra -Ilibopencm3/include -fno-common -fno-builtin \
+CFLAGS		= -O0 -g3 -Wall -Wextra -Ilibopencm3/include -fno-common -fno-builtin -D$(HWCONFIG) \
 		  -mcpu=cortex-m3 -mthumb -std=gnu99 -ffunction-sections -fdata-sections
 CPPFLAGS    = -O0 -g3 -Wall -Wextra -Ilibopencm3/include -fno-common \
 		 -ffunction-sections -fdata-sections -fno-builtin -fno-rtti -fno-exceptions -fno-unwind-tables -mcpu=cortex-m3 -mthumb
@@ -55,9 +56,9 @@ Debug:images
 cleanDebug:clean
 images: $(BINARY)
 	@printf "  OBJCOPY $(BINARY).bin\n"
-	$(Q)$(OBJCOPY) -Obinary $(BINARY) $(BINARY).bin
+	$(Q)$(OBJCOPY) -Obinary $(BINARY) $(BINARY)_$(HWCONFIG).bin
 	@printf "  OBJCOPY $(BINARY).hex\n"
-	$(Q)$(OBJCOPY) -Oihex $(BINARY) $(BINARY).hex
+	$(Q)$(OBJCOPY) -Oihex $(BINARY) $(BINARY)_$(HWCONFIG).hex
 	$(Q)$(SIZE) $(BINARY)
 
 $(BINARY): $(OBJS) $(LDSCRIPT)
@@ -78,9 +79,9 @@ clean:
 	@printf "  CLEAN   $(BINARY)\n"
 	$(Q)rm -f $(BINARY)
 	@printf "  CLEAN   $(BINARY).bin\n"
-	$(Q)rm -f $(BINARY).bin
+	$(Q)rm -f $(BINARY)_$(HWCONFIG).bin
 	@printf "  CLEAN   $(BINARY).hex\n"
-	$(Q)rm -f $(BINARY).hex
+	$(Q)rm -f $(BINARY)_$(HWCONFIG).hex
 	@printf "  CLEAN   $(BINARY).srec\n"
 	$(Q)rm -f $(BINARY).srec
 	@printf "  CLEAN   $(BINARY).list\n"
@@ -93,7 +94,7 @@ flash: images
 		       -f $(OPENOCD_FLASHER) \
 		       -f $(OPENOCD_BOARD) \
 		       -c "init" -c "reset halt" \
-		       -c "flash write_image erase $(BINARY).hex" \
+		       -c "flash write_image erase $(BINARY)_$(HWCONFIG).hex" \
 		       -c "reset" \
 		       -c "shutdown" $(NULL)
 

@@ -1,0 +1,5 @@
+stm32_test
+*.o
+*.map
+*.bin
+*.hex
