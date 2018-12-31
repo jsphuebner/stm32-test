@@ -25,7 +25,7 @@ LDSCRIPT 	= stm32_test.ld
 HWCONFIG	?= HWCONFIG_REV3
 
 LIBNAME		= opencm3_stm32f1
-DEFS		+= -DSTM32F1
+DEFS		+= -DSTM32F1 -D$(HWCONFIG)
 
 FP_FLAGS	?= -msoft-float
 ARCH_FLAGS	= -mthumb -mcpu=cortex-m3 $(FP_FLAGS) -mfix-cortex-m3-ldrd

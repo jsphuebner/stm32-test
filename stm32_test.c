@@ -375,7 +375,7 @@ void test_run()
     if (pass)
     {
         printf("\033[32;1;1mAll tests PASSED\033[0;0;0m\r\n");
-        //blink(100000);
+        blink(100000);
     }
     else
     {
@@ -391,9 +391,8 @@ int main(void)
 
    AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP; // | AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON;
 
-   test_run();
-   
    blink(500000);
+   test_run();
 
    return 0;
 }
