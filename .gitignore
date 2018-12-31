@@ -1,5 +1,7 @@
 stm32_test
+*.d
 *.o
+*.elf
 *.map
 *.bin
 *.hex

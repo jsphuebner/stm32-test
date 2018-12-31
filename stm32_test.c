@@ -19,8 +19,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define STM32F1
-
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
@@ -31,6 +29,7 @@
 #include <libopencm3/cm3/scb.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/stm32/timer.h>
+#include <stdio.h>
 #include "hwdefs.h"
 #include "printf.h"
 
@@ -350,7 +349,7 @@ void test_run()
 {
     bool pass = true;
 
-    printf("Serial Number: %X%X%X\r\n", DESIG_UNIQUE_ID2, DESIG_UNIQUE_ID1, DESIG_UNIQUE_ID0);
+    printf("Serial Number: %lu%lu%lu\r\n", DESIG_UNIQUE_ID2, DESIG_UNIQUE_ID1, DESIG_UNIQUE_ID0);
 
     for (uint32_t i = 0; i < NUM_FLOAT_PINS; i++)
     {
@@ -396,11 +395,5 @@ int main(void)
    
    blink(500000);
 
-   return 0;
-}
-
-int putchar(int c)
-{
-   usart_send_blocking(TERM_USART, c);
    return 0;
 }
