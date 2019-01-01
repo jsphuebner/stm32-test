@@ -102,9 +102,6 @@ static void clock_setup(void)
 
 static void usart_setup(void)
 {
-    /* Enable the USART1 interrupt. */
-    nvic_enable_irq(NVIC_USART3_IRQ);
-
     gpio_set_mode(TERM_USART_TXPORT, GPIO_MODE_OUTPUT_50_MHZ,
                   GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, TERM_USART_TXPIN);
 
@@ -119,27 +116,8 @@ static void usart_setup(void)
     usart_set_parity(TERM_USART, USART_PARITY_NONE);
     usart_set_flow_control(TERM_USART, USART_FLOWCONTROL_NONE);
 
-    /* Enable Receive interrupt. */
-    USART_CR1(TERM_USART) |= USART_CR1_RXNEIE;
-
     /* Finally enable the USART. */
     usart_enable(TERM_USART);
-}
-
-void usart3_isr(void)
-{
-    /* Check if we were called because of RXNE. */
-    if (((USART_CR1(USART3) & USART_CR1_RXNEIE) != 0) &&
-      ((USART_SR(USART3) & USART_SR_RXNE) != 0)) {
-
-    /* Retrieve the data from the peripheral. */
-    usart_recv(USART3);
-
-    /* Enable transmit interrupt so it sends back the data. */
-    USART_CR1(USART3) |= USART_CR1_TXEIE;
-
-    test_run();
-  }
 }
 
 /**
@@ -389,10 +367,17 @@ int main(void)
    usart_setup();
    tim_setup();
 
-   AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP; // | AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON;
+   #ifdef HWCONFIG_REV1
+   AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP;
+   #else
+   AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP | AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON;
+   #endif
 
    blink(500000);
-   test_run();
+   
+   do {
+      test_run();
+   } while(usart_recv_blocking(TERM_USART));
 
    return 0;
 }

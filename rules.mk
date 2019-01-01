@@ -38,11 +38,12 @@ AS		:= $(PREFIX)-as
 OBJCOPY		:= $(PREFIX)-objcopy
 OBJDUMP		:= $(PREFIX)-objdump
 GDB		:= $(PREFIX)-gdb
+SIZE  = $(PREFIX)-size
 STFLASH		= $(shell which st-flash)
 STYLECHECK	:= /checkpatch.pl
 STYLECHECKFLAGS	:= --no-tree -f --terse --mailback
 STYLECHECKFILES	:= $(shell find . -name '*.[ch]')
-OPT		:= -Os
+OPT		:= -O0
 DEBUG		:= -ggdb3
 CSTD		?= -std=c99
 
@@ -127,7 +128,7 @@ TGT_LDFLAGS		+= --static -nostartfiles
 TGT_LDFLAGS		+= -T$(LDSCRIPT)
 TGT_LDFLAGS		+= $(ARCH_FLAGS) $(DEBUG)
 TGT_LDFLAGS		+= -Wl,-Map=$(*).map -Wl,--cref
-TGT_LDFLAGS		+= -Wl,--gc-sections
+#TGT_LDFLAGS		+= -Wl,--gc-sections
 ifeq ($(V),99)
 TGT_LDFLAGS		+= -Wl,--print-gc-sections
 endif
@@ -145,7 +146,7 @@ LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 .SECONDEXPANSION:
 .SECONDARY:
 
-all: elf
+all: elf bin hex
 
 elf: $(BINARY).elf
 bin: $(BINARY).bin
@@ -181,42 +182,43 @@ print-%:
 	@echo $*=$($*)
 
 %.images: %.bin %.hex %.srec %.list %.map
-	@#printf "*** $* images generated ***\n"
+	@printf "*** $* images generated ***\n"
 
 %.bin: %.elf
-	@#printf "  OBJCOPY $(*).bin\n"
+	@printf "  OBJCOPY $(*).bin\n"
 	$(Q)$(OBJCOPY) -Obinary $(*).elf $(*).bin
 
 %.hex: %.elf
-	@#printf "  OBJCOPY $(*).hex\n"
+	@printf "  OBJCOPY $(*).hex\n"
 	$(Q)$(OBJCOPY) -Oihex $(*).elf $(*).hex
 
 %.srec: %.elf
-	@#printf "  OBJCOPY $(*).srec\n"
+	@printf "  OBJCOPY $(*).srec\n"
 	$(Q)$(OBJCOPY) -Osrec $(*).elf $(*).srec
 
 %.list: %.elf
-	@#printf "  OBJDUMP $(*).list\n"
+	@printf "  OBJDUMP $(*).list\n"
 	$(Q)$(OBJDUMP) -S $(*).elf > $(*).list
 
 %.elf %.map: $(OBJS) $(LDSCRIPT) $(OPENCM3_DIR)/lib/lib$(LIBNAME).a
-	@#printf "  LD      $(*).elf\n"
+	@printf "  LD      $(*).elf\n"
 	$(Q)$(LD) $(TGT_LDFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $(*).elf
+	$(Q)$(SIZE) $(*).elf
 
 %.o: %.c
-	@#printf "  CC      $(*).c\n"
+	@printf "  CC      $(*).c\n"
 	$(Q)$(CC) $(TGT_CFLAGS) $(CFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $(*).o -c $(*).c
 
 %.o: %.cxx
-	@#printf "  CXX     $(*).cxx\n"
+	@printf "  CXX     $(*).cxx\n"
 	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $(*).o -c $(*).cxx
 
 %.o: %.cpp
-	@#printf "  CXX     $(*).cpp\n"
+	@printf "  CXX     $(*).cpp\n"
 	$(Q)$(CXX) $(TGT_CXXFLAGS) $(CXXFLAGS) $(TGT_CPPFLAGS) $(CPPFLAGS) -o $(*).o -c $(*).cpp
 
 clean:
-	@#printf "  CLEAN\n"
+	@printf "  CLEAN\n"
 	$(Q)$(RM) $(GENERATED_BINARIES) generated.* $(OBJS) $(OBJS:%.o=%.d)
 
 stylecheck: $(STYLECHECKFILES:=.stylecheck)
