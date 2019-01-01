@@ -16,6 +16,10 @@ The only external depedency is libopencm3 which I forked. You can download and b
 
 Now you can compile stm32-sine by typing
 
-`make`
+`make bin`
+
+or
+
+`make bin HWCONFIG=HWCONFIG_REV3`
 
 And upload it to your board using a JTAG/SWD adapter
