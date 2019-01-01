@@ -369,12 +369,11 @@ int main(void)
 
    #ifdef HWCONFIG_REV1
    AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP;
-   #else
+   #endif
+   #ifdef HWCONFIG_REV3
    AFIO_MAPR |= AFIO_MAPR_SPI1_REMAP | AFIO_MAPR_SWJ_CFG_JTAG_OFF_SW_ON;
    #endif
 
-   blink(500000);
-   
    do {
       test_run();
    } while(usart_recv_blocking(TERM_USART));
