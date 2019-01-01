@@ -14,12 +14,12 @@ The only external depedency is libopencm3 which I forked. You can download and b
 
 `make get-deps`
 
-Now you can compile stm32-sine by typing
+Now you can compile stm32-test by typing
 
-`make bin`
+`make`
 
 or
 
-`make bin HWCONFIG=HWCONFIG_REV3`
+`make HWCONFIG=HWCONFIG_REV3`
 
 And upload it to your board using a JTAG/SWD adapter
