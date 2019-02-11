@@ -8,6 +8,12 @@ This program tests a completed main boards functionality by running the followin
 * Resolver excitation is generated (but not tested)
 * LED blinks when all tests are successful
 
+# Connection diagram
+Thanks to Dima for this contribution!
+Revision 3 main board:
+
+![Revision 3 main board connection diagram](test-mainboard-rev3.png)
+
 # Compiling
 You will need the arm-none-eabi toolchain: https://developer.arm.com/open-source/gnu-toolchain/gnu-rm/downloads
 The only external depedency is libopencm3 which I forked. You can download and build this dependency by typing
